@@ -1,42 +1,75 @@
-//--------------------Imports-----------------------
+//=======================Imports=======================//
+
 #include <SoftwareSerial.h>
-//---------------------Pin Setup------------------------
+#include <String.h>
 
-const int finishedInterruptPin = 3;
-const int lightPin = 52;
+//=======================Pin Setup=======================//
 
-//--------------Globals-----------------
+const int lightPin = 22;
 
-double debounceTime = 0; //Set up to debounce the trigger that comes from the esp. This should stop mutiple triggers that come from the esp.
-bool commandTrigger = false; //keeps track if someone hits the endpoint.
+//=======================Globals=======================//
+
+//---Integers---
+
+//---Strings---
+String command = "";
+
+//---Booleans---
 bool lightOn = false;
 
-void setup() {
+void setup()
+{
+  //========Serial Setup========//
 
   Serial.begin(9600);
   Serial1.begin(9600);
+
+  //========Pin Setup========//
+
   pinMode(lightPin, OUTPUT);
+
 }
 
-void loop() {
-  
-  if(Serial1.available()){
-    char command = Serial1.read();
-    if(command == 'L'){
-      Serial.println("Light Command Found!");
-      commandTrigger = true;
-    }
+void loop()
+{
+
+  //Read as much as possible from the ESP8266 as append it to the command string.
+  while (Serial1.available()) {
+    char tempChar = Serial1.read();
+    command += tempChar;
   }
-  if(commandTrigger){
-    if (!lightOn){
-      Serial.println("Should Be High");
-      digitalWrite(lightPin, HIGH);
-    }
-    else{
-      Serial.println("Should Be Low");
-      digitalWrite(lightPin, LOW);
-    }
-    lightOn = !lightOn;
-    commandTrigger = false;
+
+  //------------------Command Decoder--------------------//
+  //Note: We have to reset command in each of the conditionals due to serial coms being slower than the main loop.
+  if (strcmp(command.c_str(), "toggleLights") == 0)
+  {
+    toggleLights();
+    command = "";
   }
+  else if (strcmp(command.c_str(), "readTemp") == 0)
+  {
+    Serial.println("Reading Temp");
+    command = "";
+  }
+
 }
+
+//===================Command Functions===================//
+
+//toggleLights: will toggle pin "lightPin" based on the lightOn variable.
+void toggleLights()
+{
+  if (!lightOn)
+  {
+    Serial.println("Should Be High");
+    digitalWrite(lightPin, HIGH);
+  }
+  else
+  {
+    Serial.println("Should Be Low");
+    digitalWrite(lightPin, LOW);
+  }
+  lightOn = !lightOn;
+}
+
+
